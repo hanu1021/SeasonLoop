@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SeasonLoop — Farm Advisory Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Noto+Sans+Telugu:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --soil-dark:#1F1811;
+    --surface:#2A2119;
+    --surface-2:#342A20;
+    --paper:#F5F0E6;
+    --paper-dim:#E7DFCE;
+    --leaf:#6B9B4F;
+    --leaf-dim:#3F5C33;
+    --gold:#E0A83E;
+    --clay:#C1573C;
+    --deepgreen:#2F5B45;
+    --text-main:#F5F0E6;
+    --text-muted:#B8A88F;
+    --text-on-paper:#241C14;
+    --line:#43392C;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--soil-dark);
+    color:var(--text-main);
+    font-family:'Inter','Noto Sans Devanagari','Noto Sans Telugu',sans-serif;
+    min-height:100vh;
+    padding:32px 20px 80px;
+  }
+  .wrap{max-width:920px;margin:0 auto;}
+
+  header{display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:8px;}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--gold);margin-bottom:10px;
+  }
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:clamp(32px,5vw,48px);
+    margin:0 0 8px;
+    letter-spacing:-0.01em;
+  }
+  .sub{color:var(--text-muted);max-width:520px;font-size:15px;line-height:1.5;margin-bottom:28px;}
+  .lang-changer{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);
+    background:none;border:1px solid var(--line);padding:6px 12px;border-radius:16px;cursor:pointer;margin-bottom:22px;
+  }
+  .lang-changer:hover{color:var(--paper-dim);border-color:var(--text-muted);}
+
+  /* --- Language select card --- */
+  .lang-card{
+    background:var(--surface);border:1px solid var(--line);border-radius:18px;
+    padding:36px 26px;text-align:center;margin-bottom:20px;
+  }
+  .lang-card h2{font-family:'Fraunces',serif;font-weight:600;font-size:24px;margin:0 0 22px;}
+  .lang-options{display:grid;gap:12px;max-width:340px;margin:0 auto;}
+  .lang-option{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 20px;border-radius:12px;border:1px solid var(--line);
+    background:var(--surface-2);cursor:pointer;transition:border-color .15s ease, transform .15s ease;
+  }
+  .lang-option:hover{border-color:var(--gold);transform:translateY(-1px);}
+  .lang-option .native{font-family:'Fraunces',serif,'Noto Sans Devanagari','Noto Sans Telugu';font-size:19px;font-weight:600;}
+  .lang-option .eng{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);}
+
+  /* --- Season Ring --- */
+  .ring-block{display:flex;flex-direction:column;align-items:center;margin-bottom:36px;}
+  .ring-outer{position:relative;width:200px;height:200px;}
+  .ring{
+    width:200px;height:200px;border-radius:50%;
+    transition:background 0.6s ease;
+  }
+  .ring-hole{
+    position:absolute;top:16px;left:16px;width:168px;height:168px;
+    border-radius:50%;background:var(--soil-dark);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+  }
+  .ring-hole .label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;}
+  .ring-hole .stage-name{font-family:'Fraunces',serif;font-size:20px;font-weight:600;margin-top:4px;text-align:center;padding:0 10px;}
+  .steps-row{display:flex;justify-content:center;gap:6px;margin-top:14px;flex-wrap:wrap;}
+  .step-pill{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.05em;
+    padding:5px 10px;border-radius:20px;border:1px solid var(--line);color:var(--text-muted);
+  }
+  .step-pill.active{border-color:var(--gold);color:var(--gold);}
+  .step-pill.done{border-color:var(--leaf);color:var(--leaf);}
+
+  /* --- Card --- */
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:28px 26px;
+    margin-bottom:20px;
+  }
+  .card h2{
+    font-family:'Fraunces',serif;font-weight:600;font-size:22px;margin:0 0 4px;
+  }
+  .card .stage-tag{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);
+    text-transform:uppercase;letter-spacing:.1em;margin-bottom:18px;display:block;
+  }
+
+  .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+  @media (max-width:600px){.field-grid{grid-template-columns:1fr;}}
+  .field label{
+    display:block;font-size:13px;color:var(--text-muted);margin-bottom:6px;font-weight:500;
+  }
+  .field select, .field input{
+    width:100%;padding:11px 12px;border-radius:9px;border:1px solid var(--line);
+    background:var(--paper);color:var(--text-on-paper);font-family:'Inter',sans-serif;font-size:14px;
+    transition:border-color .2s ease, box-shadow .2s ease;
+  }
+  .field input[type=range]{padding:0;background:transparent;}
+  .range-value{font-family:'IBM Plex Mono',monospace;color:var(--gold);font-size:13px;margin-top:4px;display:inline-block;}
+
+  .field.autofilled label .autofill-tag{
+    display:inline-flex;align-items:center;gap:4px;
+    font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.04em;
+    color:var(--leaf);background:rgba(107,155,79,.14);border:1px solid var(--leaf-dim);
+    border-radius:5px;padding:2px 6px;margin-left:7px;text-transform:uppercase;vertical-align:middle;
+  }
+  .field.autofilled select, .field.autofilled input{
+    border-color:var(--leaf-dim);
+    box-shadow:0 0 0 3px rgba(107,155,79,.12);
+  }
+
+  button.primary{
+    background:var(--gold);color:var(--soil-dark);border:none;
+    font-family:'Inter',sans-serif;font-weight:700;font-size:14px;
+    padding:13px 24px;border-radius:9px;cursor:pointer;letter-spacing:.01em;
+    transition:transform .15s ease, background .15s ease;
+  }
+  button.primary:hover{background:#EEBD5E;transform:translateY(-1px);}
+  button.secondary{
+    background:transparent;color:var(--text-muted);border:1px solid var(--line);
+    font-family:'Inter',sans-serif;font-size:13px;padding:11px 18px;border-radius:9px;cursor:pointer;margin-left:10px;
+  }
+  button.secondary:hover{color:var(--text-main);border-color:var(--text-muted);}
+
+  /* --- Result --- */
+  .result{
+    margin-top:22px;padding:20px;border-radius:14px;
+    background:var(--surface-2);border:1px solid var(--line);
+    display:none;
+  }
+  .result.show{display:block;animation:fadeIn .4s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  .result .headline{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+  .result .headline .name{font-family:'Fraunces',serif;font-size:24px;font-weight:600;color:var(--gold);}
+  .result .headline .meta{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-muted);}
+  .result p{margin:6px 0;line-height:1.55;font-size:14.5px;color:var(--paper-dim);}
+  .badge-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+  .badge{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;padding:5px 10px;border-radius:6px;
+    background:rgba(107,155,79,.15);color:var(--leaf);border:1px solid var(--leaf-dim);
+  }
+  .badge.clay{background:rgba(193,87,60,.15);color:#E38669;border-color:var(--clay);}
+  .badge.gold{background:rgba(224,168,62,.15);color:var(--gold);border-color:var(--gold);}
+
+  .crop-options{display:grid;gap:10px;margin-top:14px;}
+  .crop-option{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:14px 16px;border-radius:10px;border:1px solid var(--line);
+    background:var(--surface-2);cursor:pointer;transition:border-color .15s ease;
+  }
+  .crop-option:hover{border-color:var(--gold);}
+  .crop-option.selected{border-color:var(--leaf);background:rgba(107,155,79,.08);}
+  .crop-option .cname{font-family:'Fraunces',serif;font-size:17px;font-weight:600;}
+  .crop-option .cmeta{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);margin-top:3px;}
+  .crop-option .score{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--gold);}
+
+  .actions{display:flex;align-items:center;margin-top:6px;flex-wrap:wrap;gap:10px;}
+
+  footer{text-align:center;margin-top:40px;}
+  .about-toggle{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-muted);
+    background:none;border:1px solid var(--line);padding:9px 16px;border-radius:20px;cursor:pointer;
+  }
+  .about-body{
+    max-width:640px;margin:16px auto 0;text-align:left;font-size:13.5px;line-height:1.6;color:var(--text-muted);
+    display:none;padding:18px 20px;border:1px solid var(--line);border-radius:12px;background:var(--surface);
+  }
+  .about-body.show{display:block;}
+  .about-body b{color:var(--paper-dim);}
+
+  /* --- Field mapping --- */
+  .field-map-layout{display:grid;grid-template-columns:1fr 220px;gap:24px;align-items:start;}
+  @media (max-width:640px){.field-map-layout{grid-template-columns:1fr;}}
+  .gps-status{
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--text-muted);
+    padding:10px 12px;border:1px dashed var(--line);border-radius:9px;margin-bottom:14px;min-height:18px;
+  }
+  .gps-status.live{color:var(--leaf);border-color:var(--leaf-dim);}
+  .gps-status.err{color:#E38669;border-color:var(--clay);}
+  .point-list{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 4px;}
+  .point-chip{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);
+    background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:4px 8px;
+  }
+  .boundary-preview{
+    background:var(--surface-2);border:1px solid var(--line);border-radius:14px;
+    display:flex;align-items:center;justify-content:center;padding:10px;
+  }
+  .boundary-preview svg{width:100%;height:auto;}
+  .sat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
+  @media (max-width:600px){.sat-grid{grid-template-columns:1fr;}}
+  .sat-item{
+    background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;
+  }
+  .sat-item .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;}
+  .sat-item .v{font-family:'Fraunces',serif;font-size:19px;font-weight:600;color:var(--paper-dim);margin-top:3px;}
+  .skip-link{
+    background:none;border:none;color:var(--text-muted);font-family:'Inter',sans-serif;font-size:12.5px;
+    text-decoration:underline;cursor:pointer;padding:0;margin-left:4px;
+  }
+  .skip-link:hover{color:var(--paper-dim);}
+  .sim-note{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);
+    background:rgba(224,168,62,.08);border:1px solid var(--gold);border-radius:8px;padding:8px 10px;margin-top:12px;
+  }
+  .sim-note.leaf{
+    font-family:'Fraunces',serif;font-size:15px;line-height:1.6;color:var(--paper-dim);
+    background:rgba(107,155,79,.08);border-color:var(--leaf);border-radius:12px;padding:16px 18px;margin-top:16px;
+  }
+
+  /* --- Crop fit breakdown --- */
+  .fit-breakdown{margin-top:18px;padding-top:16px;border-top:1px solid var(--line);}
+  .fit-breakdown .fit-title{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);
+    text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;
+  }
+  .fit-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+  .fit-row:last-child{margin-bottom:0;}
+  .fit-row .fit-label{font-size:12.5px;color:var(--paper-dim);width:100px;flex-shrink:0;}
+  .fit-row .fit-track{flex:1;height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden;}
+  .fit-row .fit-fill{height:100%;border-radius:3px;background:var(--leaf);transition:width .5s ease;}
+  .fit-row .fit-num{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--gold);width:46px;text-align:right;flex-shrink:0;}
+
+  /* --- Season summary recap --- */
+  .recap-list{display:grid;gap:10px;margin:16px 0;}
+  .recap-item{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:13px 16px;}
+  .recap-item .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;}
+  .recap-item .v{font-family:'Fraunces',serif;font-size:18px;font-weight:600;color:var(--gold);margin-top:3px;}
+  .recap-item .d{font-size:12.5px;color:var(--text-muted);margin-top:4px;line-height:1.5;}
+  @keyframes recapIn{from{opacity:0;transform:translateY(7px);}to{opacity:1;transform:translateY(0);}}
+  .recap-item{animation:recapIn .5s ease both;}
+  .recap-item:nth-child(1){animation-delay:.05s;}
+  .recap-item:nth-child(2){animation-delay:.16s;}
+  .recap-item:nth-child(3){animation-delay:.27s;}
+  .recap-item:nth-child(4){animation-delay:.38s;}
+
+  /* --- Loop-closed ring signature --- */
+  @keyframes loopPulse{
+    0%{box-shadow:0 0 0 0 rgba(107,155,79,.5);}
+    70%{box-shadow:0 0 0 20px rgba(107,155,79,0);}
+    100%{box-shadow:0 0 0 0 rgba(107,155,79,0);}
+  }
+  .ring-outer.complete .ring{animation:loopPulse 1.8s ease-out 1;border-radius:50%;}
+  .ring-outer.complete .ring-hole{box-shadow:inset 0 0 0 2px var(--leaf);}
+  @media (prefers-reduced-motion: reduce){
+    .recap-item{animation:none;}
+    .ring-outer.complete .ring{animation:none;}
+    .fit-row .fit-fill{transition:none;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- LANGUAGE SELECT -->
+  <div class="lang-card" id="langCard">
+    <h2 id="langPrompt">Choose your language / अपनी भाषा चुनें / మీ భాషను ఎంచుకోండి</h2>
+    <div class="lang-options">
+      <div class="lang-option" onclick="setLanguage('en')">
+        <span class="native">English</span><span class="eng">EN</span>
+      </div>
+      <div class="lang-option" onclick="setLanguage('hi')">
+        <span class="native">हिन्दी</span><span class="eng">HI</span>
+      </div>
+      <div class="lang-option" onclick="setLanguage('te')">
+        <span class="native">తెలుగు</span><span class="eng">TE</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="appBody" style="display:none;">
+  <header>
+    <div class="eyebrow" data-i18n="appEyebrow">Season Loop — Closed-Loop Farm Advisory</div>
+    <h1 data-i18n="appTitle">One season, four decisions.</h1>
+    <div class="sub" data-i18n="appSub">Pick a crop from your soil and weather, know when to water, know when to cut, then feed the soil back before the next planting begins.</div>
+    <button class="lang-changer" onclick="showLangCard()" data-i18n="changeLanguage">🌐 Change language</button>
+  </header>
+
+  <!-- FIELD MAPPING -->
+  <div class="card" id="fieldCard">
+    <span class="stage-tag" data-i18n="fieldStageTag">Stage 00</span>
+    <h2 data-i18n="fieldTitle">Map your field</h2>
+    <p style="color:var(--text-muted);font-size:13.5px;margin-top:-2px;" data-i18n="fieldDesc">Walk the boundary of your land with your phone. Each tap drops a GPS point — once the shape closes, we look up satellite data for that exact plot and use it to pre-fill the steps ahead.</p>
+
+    <div class="field-map-layout">
+      <div>
+        <div class="gps-status" id="gpsStatus" data-i18n="gpsWaiting">Waiting for first point…</div>
+        <div class="actions">
+          <button class="primary" onclick="addPointGPS()" data-i18n="btnAddPoint">📍 Add point at my location</button>
+          <button class="secondary" onclick="simulateWalk()" data-i18n="btnSimulate">Simulate a walk (demo mode)</button>
+        </div>
+        <div class="point-list" id="pointList"></div>
+        <div class="actions" id="boundaryActions" style="display:none;margin-top:16px;">
+          <button class="primary" onclick="closeBoundary()" data-i18n="btnCloseBoundary">Close boundary &amp; fetch satellite data</button>
+          <button class="secondary" onclick="resetField()" data-i18n="btnReset">Reset points</button>
+        </div>
+        <div class="result" id="satResult"></div>
+      </div>
+      <div class="boundary-preview">
+        <svg id="fieldSvg" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+          <text x="110" y="114" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#5a4f3f">no points yet</text>
+        </svg>
+      </div>
+    </div>
+    <div class="actions" style="margin-top:18px;">
+      <span style="font-size:12.5px;color:var(--text-muted);" data-i18n="skipPrompt">Not near the field right now?</span>
+      <button class="skip-link" onclick="skipMapping()" data-i18n="skipLink">Skip — enter details manually</button>
+    </div>
+  </div>
+
+  <div id="mainFlow" style="display:none;">
+  <div class="ring-block">
+    <div class="ring-outer">
+      <div class="ring" id="ring"></div>
+      <div class="ring-hole">
+        <div class="label"><span data-i18n="stageLabel">Stage</span> <span id="stageNum">1</span> <span data-i18n="ofLabel">of 4</span></div>
+        <div class="stage-name" id="stageName">Choose crop</div>
+      </div>
+    </div>
+    <div class="steps-row">
+      <div class="step-pill" id="pill1">01 · Crop</div>
+      <div class="step-pill" id="pill2">02 · Irrigation</div>
+      <div class="step-pill" id="pill3">03 · Harvest</div>
+      <div class="step-pill" id="pill4">04 · Green manure</div>
+    </div>
+  </div>
+
+  <!-- STAGE 1: CROP -->
+  <div class="card" id="stage1">
+    <span class="stage-tag" data-i18n="stage1Tag">Stage 01</span>
+    <h2 data-i18n="stage1Title">What should I grow this season?</h2>
+    <div class="field-grid">
+      <div class="field" id="f-soilType">
+        <label><span data-i18n="labelSoilType">Soil type</span> <span class="autofill-tag" style="display:none;" data-i18n="autofillTag">📡 auto-filled</span></label>
+        <select id="soilType">
+          <option value="Black">Black / Regur</option>
+          <option value="Red">Red / Laterite</option>
+          <option value="Alluvial">Alluvial</option>
+          <option value="Sandy Loam">Sandy loam</option>
+          <option value="Clay">Clay</option>
+        </select>
+      </div>
+      <div class="field">
+        <label data-i18n="labelSeason">Season</label>
+        <select id="season">
+          <option value="Kharif">Kharif (monsoon)</option>
+          <option value="Rabi">Rabi (winter)</option>
+          <option value="Zaid">Zaid (summer)</option>
+        </select>
+      </div>
+      <div class="field" id="f-rainfall">
+        <label><span data-i18n="labelRainfall">Expected / last season rainfall (mm)</span> <span class="autofill-tag" style="display:none;" data-i18n="autofillTag">📡 auto-filled</span> — <span class="range-value" id="rainOut">700</span></label>
+        <input type="range" id="rainfall" min="100" max="2000" step="10" value="700">
+      </div>
+      <div class="field" id="f-waterAvail">
+        <label><span data-i18n="labelWaterAvail">Water availability</span> <span class="autofill-tag" style="display:none;" data-i18n="autofillTag">📡 auto-filled</span></label>
+        <select id="waterAvail">
+          <option value="Low">Low</option>
+          <option value="Medium" selected>Medium</option>
+          <option value="High">High</option>
+        </select>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="primary" onclick="suggestCrops()" data-i18n="btnGetCropSuggestions">Get crop suggestions</button>
+    </div>
+    <div class="result" id="cropResult">
+      <p style="color:var(--text-muted);font-family:'IBM Plex Mono',monospace;font-size:12px;margin-bottom:2px;" data-i18n="cropResultHint">Ranked by fit to your inputs — tap one to lock it in</p>
+      <div class="crop-options" id="cropOptions"></div>
+      <div class="fit-breakdown" id="fitBreakdown" style="display:none;"></div>
+      <div class="actions" id="cropContinueRow" style="display:none;margin-top:16px;">
+        <button class="primary" onclick="goTo(2)" data-i18n="btnContinueIrrigation">Continue to irrigation →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STAGE 2: IRRIGATION -->
+  <div class="card" id="stage2" style="display:none;">
+    <span class="stage-tag" data-i18n="stage2Tag">Stage 02</span>
+    <h2 data-i18n="stage2Title">Should I irrigate right now?</h2>
+    <p style="color:var(--text-muted);font-size:13.5px;margin-top:-8px;"><span data-i18n="cropLockedPrefix">Crop locked in:</span> <b id="irrCropLabel" style="color:var(--gold);"></b></p>
+    <div class="field-grid">
+      <div class="field" id="f-moisture">
+        <label><span data-i18n="labelMoisture">Current soil moisture (%)</span> <span class="autofill-tag" style="display:none;" data-i18n="autofillTag">📡 auto-filled</span> — <span class="range-value" id="moistOut">28</span></label>
+        <input type="range" id="moisture" min="5" max="80" step="1" value="28">
+      </div>
+      <div class="field">
+        <label><span data-i18n="labelDaysSince">Days since last rainfall</span> — <span class="range-value" id="daysOut">4</span></label>
+        <input type="range" id="daysSince" min="0" max="20" step="1" value="4">
+      </div>
+      <div class="field" id="f-rainProb">
+        <label><span data-i18n="labelRainProb">Chance of rain in next 48 hrs (%)</span> <span class="autofill-tag" style="display:none;" data-i18n="autofillTag">📡 auto-filled</span> — <span class="range-value" id="rainProbOut">20</span></label>
+        <input type="range" id="rainProb" min="0" max="100" step="5" value="20">
+      </div>
+      <div class="field">
+        <label data-i18n="labelGrowthStage">Growth stage</label>
+        <select id="growthStage">
+          <option value="Sowing/Establishment">Sowing / establishment</option>
+          <option value="Vegetative" selected>Vegetative growth</option>
+          <option value="Flowering">Flowering</option>
+          <option value="Maturity">Maturity / ripening</option>
+        </select>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="primary" onclick="checkIrrigation()" data-i18n="btnCheckIrrigation">Check irrigation now</button>
+      <button class="secondary" onclick="goTo(1)" data-i18n="btnBack">← Back</button>
+    </div>
+    <div class="result" id="irrResult"></div>
+    <div class="actions" id="irrContinueRow" style="display:none;margin-top:16px;">
+      <button class="primary" onclick="goTo(3)" data-i18n="btnContinueHarvest">Continue to harvest →</button>
+    </div>
+  </div>
+
+  <!-- STAGE 3: HARVEST -->
+  <div class="card" id="stage3" style="display:none;">
+    <span class="stage-tag" data-i18n="stage3Tag">Stage 03</span>
+    <h2 data-i18n="stage3Title">When do I harvest?</h2>
+    <p style="color:var(--text-muted);font-size:13.5px;margin-top:-8px;"><span data-i18n="cropLockedPrefix">Crop locked in:</span> <b id="harvCropLabel" style="color:var(--gold);"></b> — <span data-i18n="harvDurationPrefix">typical duration</span> <b id="harvDurationLabel"></b> <span data-i18n="daysWord">days</span></p>
+    <div class="field-grid">
+      <div class="field">
+        <label data-i18n="labelSowDate">Sowing date</label>
+        <input type="date" id="sowDate">
+      </div>
+      <div class="field">
+        <label><span data-i18n="labelMaturity">Crop maturity right now (%)</span> — <span class="range-value" id="matOut">70</span></label>
+        <input type="range" id="maturity" min="0" max="100" step="5" value="70">
+      </div>
+      <div class="field">
+        <label data-i18n="labelWeatherAlert">Weather alert near harvest window</label>
+        <select id="weatherAlert">
+          <option value="None">None expected</option>
+          <option value="Heavy rain">Heavy rain / storm expected</option>
+          <option value="Heatwave">Heatwave expected</option>
+        </select>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="primary" onclick="checkHarvest()" data-i18n="btnCalcHarvest">Calculate harvest window</button>
+      <button class="secondary" onclick="goTo(2)" data-i18n="btnBack">← Back</button>
+    </div>
+    <div class="result" id="harvResult"></div>
+    <div class="actions" id="harvContinueRow" style="display:none;margin-top:16px;">
+      <button class="primary" onclick="goTo(4)" data-i18n="btnContinueGM">Continue to green manure →</button>
+    </div>
+  </div>
+
+  <!-- STAGE 4: GREEN MANURE -->
+  <div class="card" id="stage4" style="display:none;">
+    <span class="stage-tag" data-i18n="stage4Tag">Stage 04</span>
+    <h2 data-i18n="stage4Title">What should rest in the field before the next crop?</h2>
+    <p style="color:var(--text-muted);font-size:13.5px;margin-top:-8px;"><span data-i18n="gmCropPrefix">Just harvested:</span> <b id="gmCropLabel" style="color:var(--gold);"></b></p>
+    <div class="field-grid">
+      <div class="field">
+        <label><span data-i18n="labelGapDays">Days until next crop is sown</span> — <span class="range-value" id="gapOut">55</span></label>
+        <input type="range" id="gapDays" min="20" max="120" step="5" value="55">
+      </div>
+      <div class="field">
+        <label data-i18n="labelNLevel">Soil nitrogen level after harvest</label>
+        <select id="nLevel">
+          <option value="Low">Low</option>
+          <option value="Medium" selected>Medium</option>
+          <option value="High">High</option>
+        </select>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="primary" onclick="suggestGreenManure()" data-i18n="btnSuggestGM">Suggest green manure</button>
+      <button class="secondary" onclick="goTo(3)" data-i18n="btnBack">← Back</button>
+    </div>
+    <div class="result" id="gmResult"></div>
+    <div class="actions" id="gmContinueRow" style="display:none;margin-top:16px;">
+      <button class="primary" onclick="showImpact()" data-i18n="btnSeasonImpact">See season impact →</button>
+    </div>
+    <div class="result" id="impactResult"></div>
+  </div>
+  </div>
+
+  <footer>
+    <button class="about-toggle" onclick="toggleAbout()" data-i18n="aboutToggle">How this prototype works</button>
+    <div class="about-body" id="aboutBody">
+      <p><b data-i18n="aboutP1Bold">What's real here:</b> <span data-i18n="aboutP1">the four decision engines (crop match, irrigation trigger, harvest window, green manure match) run on agronomy rules — soil type, rainfall, water need, crop duration, and nitrogen fixation — the same variables an ML model would learn from field and weather data.</span></p>
+      <p><b data-i18n="aboutP2Bold">What a production version adds:</b> <span data-i18n="aboutP2">live weather API + soil sensor / satellite soil data feeding these same rules automatically, a trained model replacing hand-set thresholds as real usage data comes in, and regional language + voice input for accessibility.</span></p>
+      <p><b data-i18n="aboutP3Bold">Why rule-based first:</b> <span data-i18n="aboutP3">it's explainable — a farmer or judge can see exactly why a suggestion was made, which matters for trust before you introduce a black-box model.</span></p>
+    </div>
+  </footer>
+  </div>
+</div>
+
+<script>
+/* ---------------- I18N ---------------- */
+let LANG = 'en';
+
+const I18N = {
+en: {
+  appEyebrow:"Season Loop — Closed-Loop Farm Advisory",
+  appTitle:"One season, four decisions.",
+  appSub:"Pick a crop from your soil and weather, know when to water, know when to cut, then feed the soil back before the next planting begins.",
+  changeLanguage:"🌐 Change language",
+  fieldStageTag:"Stage 00", fieldTitle:"Map your field",
+  fieldDesc:"Walk the boundary of your land with your phone. Each tap drops a GPS point — once the shape closes, we look up satellite data for that exact plot and use it to pre-fill the steps ahead.",
+  gpsWaiting:"Waiting for first point…",
+  btnAddPoint:"📍 Add point at my location", btnSimulate:"Simulate a walk (demo mode)",
+  btnCloseBoundary:"Close boundary & fetch satellite data", btnReset:"Reset points",
+  skipPrompt:"Not near the field right now?", skipLink:"Skip — enter details manually",
+  stageLabel:"Stage", ofLabel:"of 4",
+  stageNames:["Choose crop","Irrigation timing","Harvest window","Green manure"],
+  pillLabels:["01 · Crop","02 · Irrigation","03 · Harvest","04 · Green manure"],
+  stage1Tag:"Stage 01", stage1Title:"What should I grow this season?",
+  labelSoilType:"Soil type", labelSeason:"Season", labelRainfall:"Expected / last season rainfall (mm)", labelWaterAvail:"Water availability",
+  autofillTag:"📡 auto-filled",
+  btnGetCropSuggestions:"Get crop suggestions",
+  cropResultHint:"Ranked by fit to your inputs — tap one to lock it in",
+  btnContinueIrrigation:"Continue to irrigation →",
+  stage2Tag:"Stage 02", stage2Title:"Should I irrigate right now?", cropLockedPrefix:"Crop locked in:",
+  labelMoisture:"Current soil moisture (%)", labelDaysSince:"Days since last rainfall", labelRainProb:"Chance of rain in next 48 hrs (%)", labelGrowthStage:"Growth stage",
+  btnCheckIrrigation:"Check irrigation now", btnBack:"← Back", btnContinueHarvest:"Continue to harvest →",
+  stage3Tag:"Stage 03", stage3Title:"When do I harvest?", harvDurationPrefix:"typical duration", daysWord:"days",
+  labelSowDate:"Sowing date", labelMaturity:"Crop maturity right now (%)", labelWeatherAlert:"Weather alert near harvest window",
+  btnCalcHarvest:"Calculate harvest window", btnContinueGM:"Continue to green manure →",
+  stage4Tag:"Stage 04", stage4Title:"What should rest in the field before the next crop?", gmCropPrefix:"Just harvested:",
+  labelGapDays:"Days until next crop is sown", labelNLevel:"Soil nitrogen level after harvest",
+  btnSuggestGM:"Suggest green manure", btnSeasonImpact:"See season summary →",
+  aboutToggle:"How this prototype works",
+  aboutP1Bold:"What's real here:", aboutP1:"the four decision engines (crop match, irrigation trigger, harvest window, green manure match) run on agronomy rules — soil type, rainfall, water need, crop duration, and nitrogen fixation — the same variables an ML model would learn from field and weather data.",
+  aboutP2Bold:"What a production version adds:", aboutP2:"live weather API + soil sensor / satellite soil data feeding these same rules automatically, a trained model replacing hand-set thresholds as real usage data comes in, and regional language + voice input for accessibility.",
+  aboutP3Bold:"Why rule-based first:", aboutP3:"it's explainable — a farmer or judge can see exactly why a suggestion was made, which matters for trust before you introduce a black-box model.",
+  soil:{Black:"Black / Regur", Red:"Red / Laterite", Alluvial:"Alluvial", "Sandy Loam":"Sandy loam", Clay:"Clay"},
+  season:{Kharif:"Kharif (monsoon)", Rabi:"Rabi (winter)", Zaid:"Zaid (summer)"},
+  level:{Low:"Low", Medium:"Medium", High:"High"},
+  growth:{"Sowing/Establishment":"Sowing / establishment", Vegetative:"Vegetative growth", Flowering:"Flowering", Maturity:"Maturity / ripening"},
+  weatherAlert:{None:"None expected", "Heavy rain":"Heavy rain / storm expected", Heatwave:"Heatwave expected"},
+  cropNames:{Cotton:"Cotton", "Paddy (Rice)":"Paddy (Rice)", Groundnut:"Groundnut", Maize:"Maize", Soybean:"Soybean", Wheat:"Wheat", "Chickpea (Bengal Gram)":"Chickpea (Bengal Gram)", Mustard:"Mustard", Watermelon:"Watermelon", "Green Gram (Moong)":"Green Gram (Moong)"},
+  gmNames:{"Sunn Hemp (Crotalaria)":"Sunn Hemp (Crotalaria)", "Dhaincha (Sesbania)":"Dhaincha (Sesbania)", Cowpea:"Cowpea", "Horse Gram":"Horse Gram", "Cluster Bean (Guar)":"Cluster Bean (Guar)", "Berseem Clover":"Berseem Clover"},
+  dyn:{
+    satTitle:"Satellite data received",
+    satMeta:(lat,lng,acres)=>`${lat}, ${lng} · ~${acres} acres`,
+    satSoil:"Soil type (predicted)", satRain30:"Rainfall, last 30 days", satMoisture:"Soil moisture", satNdvi:"Vegetation index (NDVI)",
+    satNote:'Simulated for this prototype using a seeded model tied to your coordinates. In production this call is replaced by a real geospatial API — e.g. ISRO Bhuvan, Sentinel Hub, or a Soil Health Card lookup — keyed by the same lat/lng. These readings have already been filled into the form fields below — every field marked "📡 auto-filled" can still be changed by hand before you continue.',
+    btnContinueCrop:"Continue to crop selection →",
+    cropMeta:(duration,water,soil)=>`${duration} day cycle · needs ${water.toLowerCase()} water · fits ${soil} soil`,
+    cropFit:(score)=>`${score}% fit`,
+    irr:{
+      holdTitle:"Hold off", holdMeta:"Rain likely in 48 hrs",
+      holdText:(p)=>`There's a ${p}% chance of rain in the next 2 days — irrigating now risks waterlogging and wastes water. Recheck after the rain window passes.`,
+      recheck2:"Recheck in 2 days", moistureBadge:(m)=>`Soil moisture ${m}%`,
+      nowTitle:"Irrigate now", nowMeta:(mm)=>`~${mm} mm recommended`,
+      nowText:(crop,moisture,threshold,stage,days,mm)=>`Soil moisture (${moisture}%) is below the ${threshold}% comfort line for ${crop} at the ${stage.toLowerCase()} stage, and it's been ${days} day(s) since rain. Apply roughly ${mm} mm and recheck moisture in 3–4 days.`,
+      deficitBadge:(d)=>`Deficit: ${d}%`, stageBadge:(s)=>`Stage: ${s}`,
+      noneTitle:"No irrigation needed", noneMeta:"Moisture is sufficient",
+      noneText:(crop,moisture,threshold)=>`Soil moisture (${moisture}%) is above the ${threshold}% comfort line for ${crop} right now. Skipping irrigation saves water and avoids root stress. Recheck in 3–4 days or after the next rain-free stretch.`,
+      bufferBadge:(b)=>`Buffer: +${b}%`
+    },
+    harv:{
+      metaLabel:"recommended harvest window",
+      notReady:(m,d)=>`Maturity is only ${m}% — not ready regardless of weather. Hold off and monitor. Estimated natural harvest window stays around <b>${d}</b>.`,
+      rainEarly:(m)=>`Maturity is at ${m}% and heavy rain is expected near the natural harvest date — harvesting <b>~6 days early</b> avoids lodging and grain/fruit damage.`,
+      heatEarly:(m)=>`A heatwave can push maturity faster than normal. With ${m}% maturity already reached, plan to harvest <b>~3 days earlier</b> than the calendar estimate and check daily.`,
+      normal:(m)=>`Conditions look normal. With maturity at ${m}%, the harvest window centers on the calendar estimate below.`,
+      sownBadge:(d)=>`Sown ${d}`, cycleBadge:(d)=>`${d}-day cycle`
+    },
+    gm:{
+      metaLabel:(gap)=>`best fit for a ${gap}-day gap`,
+      text:(crop,nLevel,best,gap,soil)=>`${crop} left soil nitrogen at a <b>${nLevel.toLowerCase()}</b> level. ${best.name} fits your ${gap}-day gap window (needs ${best.minDays}–${best.maxDays} days), suits ${soil.toLowerCase()} soil, and has ${best.nFix.toLowerCase()} nitrogen-fixing capacity — sow it now, then mulch or plough it in about 2 weeks before the next crop goes in.`,
+      nfixBadge:(f)=>`N-fix: ${f}`, windowBadge:(a,b)=>`Window: ${a}-${b} days`
+    },
+    impact:{
+      title:"Season impact (illustrative)",
+      text:"Based on published agronomy ranges for legume green manures — actual figures depend on species, biomass, and local conditions.",
+      b1:"~40–80 kg N/ha added", b2:"Up to 30–50% less synthetic N needed next season", b3:"Soil organic carbon trending up over successive seasons"
+    },
+    summary:{
+      title:"Season summary",
+      subtitle:"One loop, closed",
+      cropK:"Crop grown",
+      irrK:"Irrigation call",
+      harvK:"Harvest date",
+      gmK:"Feeding the soil with",
+      irrUnknownShort:"Not checked",
+      irrUnknownDetail:"Irrigation timing wasn't checked this season.",
+      loopClosed:"You matched a crop to your soil and weather, watered by need instead of habit, cut at the right moment, and fed the soil back — before the next planting begins.",
+      ringDoneLabel:"✓ Season complete",
+      ringDoneName:"Loop closed"
+    },
+    fit:{
+      title:"Why this fit",
+      soilLabel:"Soil fit",
+      rainLabel:"Rainfall fit",
+      waterLabel:"Water fit"
+    }
+  }
+},
+hi: {
+  appEyebrow:"सीज़न लूप — संपूर्ण कृषि सलाहकार",
+  appTitle:"एक मौसम, चार फैसले।",
+  appSub:"अपनी मिट्टी और मौसम के अनुसार फसल चुनें, जानें कब सिंचाई करनी है, कब कटाई करनी है, फिर अगली बुवाई से पहले मिट्टी को पोषण दें।",
+  changeLanguage:"🌐 भाषा बदलें",
+  fieldStageTag:"चरण 00", fieldTitle:"अपने खेत का नक्शा बनाएं",
+  fieldDesc:"अपने फोन के साथ अपनी ज़मीन की सीमा पर चलें। हर टैप से एक GPS पॉइंट जुड़ता है — आकार बंद होते ही, हम उस ज़मीन के लिए सैटेलाइट डेटा देखते हैं और उससे आगे के चरण अपने आप भर देते हैं।",
+  gpsWaiting:"पहले पॉइंट की प्रतीक्षा है…",
+  btnAddPoint:"📍 अपनी स्थिति पर पॉइंट जोड़ें", btnSimulate:"चलना सिमुलेट करें (डेमो मोड)",
+  btnCloseBoundary:"सीमा बंद करें और सैटेलाइट डेटा प्राप्त करें", btnReset:"पॉइंट रीसेट करें",
+  skipPrompt:"अभी खेत के पास नहीं हैं?", skipLink:"छोड़ें — विवरण खुद भरें",
+  stageLabel:"चरण", ofLabel:"में से 4",
+  stageNames:["फसल चुनें","सिंचाई का समय","कटाई का समय","हरी खाद"],
+  pillLabels:["01 · फसल","02 · सिंचाई","03 · कटाई","04 · हरी खाद"],
+  stage1Tag:"चरण 01", stage1Title:"इस मौसम में क्या उगाऊं?",
+  labelSoilType:"मिट्टी का प्रकार", labelSeason:"मौसम", labelRainfall:"अपेक्षित / पिछले मौसम की वर्षा (mm)", labelWaterAvail:"पानी की उपलब्धता",
+  autofillTag:"📡 ऑटो-भरा",
+  btnGetCropSuggestions:"फसल सुझाव पाएं",
+  cropResultHint:"आपके इनपुट के अनुसार क्रमबद्ध — चुनने के लिए टैप करें",
+  btnContinueIrrigation:"सिंचाई की ओर बढ़ें →",
+  stage2Tag:"चरण 02", stage2Title:"क्या अभी सिंचाई करनी चाहिए?", cropLockedPrefix:"चुनी गई फसल:",
+  labelMoisture:"वर्तमान मिट्टी की नमी (%)", labelDaysSince:"पिछली बारिश के बाद के दिन", labelRainProb:"अगले 48 घंटों में बारिश की संभावना (%)", labelGrowthStage:"वृद्धि चरण",
+  btnCheckIrrigation:"अभी सिंचाई जांचें", btnBack:"← वापस", btnContinueHarvest:"कटाई की ओर बढ़ें →",
+  stage3Tag:"चरण 03", stage3Title:"कटाई कब करूं?", harvDurationPrefix:"सामान्य अवधि", daysWord:"दिन",
+  labelSowDate:"बुवाई की तारीख", labelMaturity:"फसल की वर्तमान परिपक्वता (%)", labelWeatherAlert:"कटाई के समय मौसम चेतावनी",
+  btnCalcHarvest:"कटाई विंडो की गणना करें", btnContinueGM:"हरी खाद की ओर बढ़ें →",
+  stage4Tag:"चरण 04", stage4Title:"अगली फसल से पहले खेत में क्या उगाएं?", gmCropPrefix:"अभी कटी फसल:",
+  labelGapDays:"अगली फसल बोने में कितने दिन बाकी हैं", labelNLevel:"कटाई के बाद मिट्टी में नाइट्रोजन स्तर",
+  btnSuggestGM:"हरी खाद सुझाएं", btnSeasonImpact:"मौसम सारांश देखें →",
+  aboutToggle:"यह प्रोटोटाइप कैसे काम करता है",
+  aboutP1Bold:"यहां क्या असली है:", aboutP1:"चार निर्णय इंजन (फसल मिलान, सिंचाई ट्रिगर, कटाई विंडो, हरी खाद मिलान) कृषि नियमों पर चलते हैं — मिट्टी का प्रकार, वर्षा, पानी की जरूरत, फसल अवधि और नाइट्रोजन स्थिरीकरण — वही चर जो एक ML मॉडल खेत और मौसम डेटा से सीखता।",
+  aboutP2Bold:"उत्पादन संस्करण में क्या जुड़ेगा:", aboutP2:"लाइव मौसम API + मिट्टी सेंसर/सैटेलाइट डेटा जो इन्हीं नियमों को अपने आप फीड करे, वास्तविक उपयोग डेटा आने पर हाथ से तय सीमाओं की जगह एक प्रशिक्षित मॉडल, और सुलभता के लिए क्षेत्रीय भाषा व आवाज़ इनपुट।",
+  aboutP3Bold:"नियम-आधारित पहले क्यों:", aboutP3:"यह स्पष्ट है — किसान या जज देख सकता है कि सुझाव क्यों दिया गया, जो ब्लैक-बॉक्स मॉडल लाने से पहले भरोसे के लिए ज़रूरी है।",
+  soil:{Black:"काली मिट्टी (रेगुर)", Red:"लाल मिट्टी (लैटेराइट)", Alluvial:"जलोढ़ मिट्टी", "Sandy Loam":"बलुई दोमट", Clay:"चिकनी मिट्टी"},
+  season:{Kharif:"खरीफ (मानसून)", Rabi:"रबी (सर्दी)", Zaid:"जायद (गर्मी)"},
+  level:{Low:"कम", Medium:"मध्यम", High:"अधिक"},
+  growth:{"Sowing/Establishment":"बुवाई / स्थापना", Vegetative:"वानस्पतिक वृद्धि", Flowering:"फूल आना", Maturity:"परिपक्वता / पकाव"},
+  weatherAlert:{None:"कोई चेतावनी नहीं", "Heavy rain":"भारी बारिश / तूफान की संभावना", Heatwave:"लू (गर्मी की लहर) की संभावना"},
+  cropNames:{Cotton:"कपास", "Paddy (Rice)":"धान (चावल)", Groundnut:"मूंगफली", Maize:"मक्का", Soybean:"सोयाबीन", Wheat:"गेहूं", "Chickpea (Bengal Gram)":"चना", Mustard:"सरसों", Watermelon:"तरबूज", "Green Gram (Moong)":"मूंग"},
+  gmNames:{"Sunn Hemp (Crotalaria)":"सनई (क्रोटालेरिया)", "Dhaincha (Sesbania)":"ढैंचा", Cowpea:"लोबिया", "Horse Gram":"कुलथी", "Cluster Bean (Guar)":"ग्वार", "Berseem Clover":"बरसीम"},
+  dyn:{
+    satTitle:"सैटेलाइट डेटा प्राप्त हुआ",
+    satMeta:(lat,lng,acres)=>`${lat}, ${lng} · ~${acres} एकड़`,
+    satSoil:"मिट्टी का प्रकार (अनुमानित)", satRain30:"पिछले 30 दिनों की वर्षा", satMoisture:"मिट्टी की नमी", satNdvi:"वनस्पति सूचकांक (NDVI)",
+    satNote:'इस प्रोटोटाइप के लिए आपके निर्देशांक से जुड़े एक सीडेड मॉडल का उपयोग करके सिमुलेट किया गया है। उत्पादन में यह कॉल एक वास्तविक भू-स्थानिक API से बदला जाता है — जैसे ISRO Bhuvan, Sentinel Hub, या सॉइल हेल्थ कार्ड लुकअप — उसी अक्षांश/देशांतर पर। ये रीडिंग नीचे फ़ॉर्म फ़ील्ड में पहले ही भर दी गई हैं — "📡 ऑटो-भरा" चिह्नित हर फ़ील्ड को आप जारी रखने से पहले हाथ से बदल सकते हैं।',
+    btnContinueCrop:"फसल चयन की ओर बढ़ें →",
+    cropMeta:(duration,water,soil)=>`${duration} दिन चक्र · ${water} पानी चाहिए · ${soil} मिट्टी के लिए उपयुक्त`,
+    cropFit:(score)=>`${score}% उपयुक्तता`,
+    irr:{
+      holdTitle:"अभी रुकें", holdMeta:"48 घंटों में बारिश संभावित",
+      holdText:(p)=>`अगले 2 दिनों में ${p}% बारिश की संभावना है — अभी सिंचाई करने से जलभराव और पानी की बर्बादी हो सकती है। बारिश की अवधि बीतने के बाद फिर से जांचें।`,
+      recheck2:"2 दिन बाद फिर जांचें", moistureBadge:(m)=>`मिट्टी की नमी ${m}%`,
+      nowTitle:"अभी सिंचाई करें", nowMeta:(mm)=>`~${mm} mm की सिफारिश`,
+      nowText:(crop,moisture,threshold,stage,days,mm)=>`${crop} के लिए ${stage} चरण पर मिट्टी की नमी (${moisture}%) ${threshold}% के आरामदायक स्तर से कम है, और बारिश हुए ${days} दिन हो चुके हैं। लगभग ${mm} mm पानी दें और 3–4 दिनों में नमी फिर से जांचें।`,
+      deficitBadge:(d)=>`कमी: ${d}%`, stageBadge:(s)=>`चरण: ${s}`,
+      noneTitle:"सिंचाई की जरूरत नहीं", noneMeta:"नमी पर्याप्त है",
+      noneText:(crop,moisture,threshold)=>`${crop} के लिए अभी मिट्टी की नमी (${moisture}%) ${threshold}% के आरामदायक स्तर से ऊपर है। सिंचाई न करने से पानी बचता है और जड़ों पर दबाव नहीं पड़ता। 3–4 दिनों में या अगली शुष्क अवधि के बाद फिर जांचें।`,
+      bufferBadge:(b)=>`अतिरिक्त: +${b}%`
+    },
+    harv:{
+      metaLabel:"अनुशंसित कटाई विंडो",
+      notReady:(m,d)=>`परिपक्वता केवल ${m}% है — मौसम चाहे जो हो, फसल तैयार नहीं है। रुकें और निगरानी करें। अनुमानित प्राकृतिक कटाई विंडो लगभग <b>${d}</b> ही रहेगी।`,
+      rainEarly:(m)=>`परिपक्वता ${m}% है और प्राकृतिक कटाई तिथि के आसपास भारी बारिश की संभावना है — <b>लगभग 6 दिन पहले</b> कटाई करने से गिरने और अनाज/फल को नुकसान से बचाव होगा।`,
+      heatEarly:(m)=>`लू सामान्य से तेज़ी से परिपक्वता ला सकती है। ${m}% परिपक्वता पहले ही पहुंच चुकी है, इसलिए कैलेंडर अनुमान से <b>लगभग 3 दिन पहले</b> कटाई की योजना बनाएं और रोज़ जांच करें।`,
+      normal:(m)=>`स्थितियां सामान्य दिख रही हैं। ${m}% परिपक्वता के साथ, कटाई विंडो नीचे दिए कैलेंडर अनुमान के आसपास केंद्रित है।`,
+      sownBadge:(d)=>`बोया गया ${d}`, cycleBadge:(d)=>`${d}-दिन चक्र`
+    },
+    gm:{
+      metaLabel:(gap)=>`${gap}-दिन के अंतराल के लिए सर्वश्रेष्ठ`,
+      text:(crop,nLevel,best,gap,soil)=>`${crop} ने मिट्टी में नाइट्रोजन को <b>${nLevel}</b> स्तर पर छोड़ा। ${best.name} आपके ${gap}-दिन के अंतराल (${best.minDays}–${best.maxDays} दिन चाहिए) में फिट बैठती है, ${soil} मिट्टी के लिए उपयुक्त है, और इसमें ${best.nFix} नाइट्रोजन-स्थिरीकरण क्षमता है — अभी इसे बोएं, फिर अगली फसल से लगभग 2 हफ्ते पहले इसे मिट्टी में मिला दें।`,
+      nfixBadge:(f)=>`N-स्थिरीकरण: ${f}`, windowBadge:(a,b)=>`अंतराल: ${a}-${b} दिन`
+    },
+    impact:{
+      title:"मौसम पर प्रभाव (उदाहरणात्मक)",
+      text:"फलीदार हरी खाद के लिए प्रकाशित कृषि आंकड़ों पर आधारित — वास्तविक आंकड़े प्रजाति, बायोमास और स्थानीय परिस्थितियों पर निर्भर करते हैं।",
+      b1:"~40–80 kg N/हेक्टेयर जुड़ा", b2:"अगले मौसम में 30–50% तक कम सिंथेटिक नाइट्रोजन की जरूरत", b3:"लगातार मौसमों में मिट्टी का जैविक कार्बन बढ़ रहा है"
+    },
+    summary:{
+      title:"मौसम सारांश",
+      subtitle:"एक लूप, पूरा",
+      cropK:"उगाई गई फसल",
+      irrK:"सिंचाई का फैसला",
+      harvK:"कटाई की तारीख",
+      gmK:"मिट्टी को मिल रहा पोषण",
+      irrUnknownShort:"जांचा नहीं गया",
+      irrUnknownDetail:"इस मौसम में सिंचाई का समय जांचा नहीं गया।",
+      loopClosed:"आपने मिट्टी और मौसम के अनुसार फसल चुनी, आदत से नहीं ज़रूरत से सिंचाई की, सही समय पर कटाई की, और अगली बुवाई से पहले मिट्टी को पोषण दिया — यही है पूरा लूप।",
+      ringDoneLabel:"✓ मौसम पूरा",
+      ringDoneName:"लूप पूरा"
+    },
+    fit:{
+      title:"यह क्यों उपयुक्त है",
+      soilLabel:"मिट्टी की उपयुक्तता",
+      rainLabel:"वर्षा की उपयुक्तता",
+      waterLabel:"पानी की उपयुक्तता"
+    }
+  }
+},
+te: {
+  appEyebrow:"సీజన్ లూప్ — సమగ్ర వ్యవసాయ సలహా వ్యవస్థ",
+  appTitle:"ఒక సీజన్, నాలుగు నిర్ణయాలు.",
+  appSub:"మీ నేల మరియు వాతావరణం ఆధారంగా పంటను ఎంచుకోండి, ఎప్పుడు నీరు పెట్టాలో, ఎప్పుడు కోతకోయాలో తెలుసుకోండి, తర్వాత తదుపరి పంట ముందు నేలకు పోషకాలు అందించండి.",
+  changeLanguage:"🌐 భాష మార్చండి",
+  fieldStageTag:"దశ 00", fieldTitle:"మీ పొలం సరిహద్దును గుర్తించండి",
+  fieldDesc:"మీ ఫోన్‌తో మీ భూమి సరిహద్దు వెంట నడవండి. ప్రతి టాప్‌తో ఒక GPS పాయింట్ నమోదవుతుంది — ఆకారం మూసుకున్న వెంటనే, మేము ఆ ప్లాట్ కోసం ఉపగ్రహ డేటాను చూసి, దానితో ముందున్న దశలను ముందుగానే నింపుతాము.",
+  gpsWaiting:"మొదటి పాయింట్ కోసం వేచి ఉంది…",
+  btnAddPoint:"📍 నా స్థానంలో పాయింట్ జోడించండి", btnSimulate:"నడకను అనుకరించండి (డెమో మోడ్)",
+  btnCloseBoundary:"సరిహద్దును మూసివేసి ఉపగ్రహ డేటాను పొందండి", btnReset:"పాయింట్లను రీసెట్ చేయండి",
+  skipPrompt:"ఇప్పుడు పొలం దగ్గర లేరా?", skipLink:"దాటవేయండి — వివరాలను మీరే నమోదు చేయండి",
+  stageLabel:"దశ", ofLabel:"/ 4",
+  stageNames:["పంటను ఎంచుకోండి","నీటిపారుదల సమయం","కోత సమయం","పచ్చిరొట్ట ఎరువు"],
+  pillLabels:["01 · పంట","02 · నీటిపారుదల","03 · కోత","04 · పచ్చిరొట్ట"],
+  stage1Tag:"దశ 01", stage1Title:"ఈ సీజన్‌లో ఏమి పండించాలి?",
+  labelSoilType:"నేల రకం", labelSeason:"సీజన్", labelRainfall:"ఆశించిన / గత సీజన్ వర్షపాతం (mm)", labelWaterAvail:"నీటి లభ్యత",
+  autofillTag:"📡 ఆటో-ఫిల్",
+  btnGetCropSuggestions:"పంట సూచనలు పొందండి",
+  cropResultHint:"మీ ఇన్‌పుట్‌లకు సరిపోయే క్రమంలో — ఎంచుకోవడానికి నొక్కండి",
+  btnContinueIrrigation:"నీటిపారుదలకు కొనసాగండి →",
+  stage2Tag:"దశ 02", stage2Title:"ఇప్పుడు నీరు పెట్టాలా?", cropLockedPrefix:"ఎంచుకున్న పంట:",
+  labelMoisture:"ప్రస్తుత నేల తేమ (%)", labelDaysSince:"చివరి వర్షం నుండి రోజులు", labelRainProb:"తదుపరి 48 గంటల్లో వర్షం అవకాశం (%)", labelGrowthStage:"పెరుగుదల దశ",
+  btnCheckIrrigation:"ఇప్పుడు నీటిపారుదల తనిఖీ చేయండి", btnBack:"← వెనుకకు", btnContinueHarvest:"కోతకు కొనసాగండి →",
+  stage3Tag:"దశ 03", stage3Title:"ఎప్పుడు కోతకోయాలి?", harvDurationPrefix:"సాధారణ వ్యవధి", daysWord:"రోజులు",
+  labelSowDate:"విత్తిన తేదీ", labelMaturity:"ప్రస్తుత పంట పరిపక్వత (%)", labelWeatherAlert:"కోత సమయంలో వాతావరణ హెచ్చరిక",
+  btnCalcHarvest:"కోత విండోను లెక్కించండి", btnContinueGM:"పచ్చిరొట్టకు కొనసాగండి →",
+  stage4Tag:"దశ 04", stage4Title:"తదుపరి పంటకు ముందు పొలంలో ఏమి పెంచాలి?", gmCropPrefix:"ఇప్పుడే కోసిన పంట:",
+  labelGapDays:"తదుపరి పంట విత్తడానికి ఎన్ని రోజులు మిగిలి ఉన్నాయి", labelNLevel:"కోత తర్వాత నేల నత్రజని స్థాయి",
+  btnSuggestGM:"పచ్చిరొట్ట ఎరువును సూచించండి", btnSeasonImpact:"సీజన్ సారాంశం చూడండి →",
+  aboutToggle:"ఈ ప్రోటోటైప్ ఎలా పనిచేస్తుంది",
+  aboutP1Bold:"ఇక్కడ నిజంగా ఉన్నది:", aboutP1:"నాలుగు నిర్ణయ యంత్రాలు (పంట సరిపోలిక, నీటిపారుదల ట్రిగ్గర్, కోత విండో, పచ్చిరొట్ట సరిపోలిక) వ్యవసాయ నియమాలపై నడుస్తాయి — నేల రకం, వర్షపాతం, నీటి అవసరం, పంట వ్యవధి, నత్రజని స్థిరీకరణ — ఇవే ఒక ML మోడల్ పొలం మరియు వాతావరణ డేటా నుండి నేర్చుకునే చరరాశులు.",
+  aboutP2Bold:"ఉత్పత్తి వెర్షన్‌లో చేరేది:", aboutP2:"ఈ నియమాలను స్వయంచాలకంగా అందించే లైవ్ వాతావరణ API + నేల సెన్సార్/ఉపగ్రహ డేటా, వాస్తవ వినియోగ డేటా వచ్చేకొద్దీ చేతితో నిర్ణయించిన థ్రెషోల్డ్‌ల స్థానంలో శిక్షణ పొందిన మోడల్, మరియు అందుబాటు కోసం ప్రాంతీయ భాష + వాయిస్ ఇన్‌పుట్.",
+  aboutP3Bold:"నియమ-ఆధారితంగా ఎందుకు మొదలుపెట్టాం:", aboutP3:"ఇది స్పష్టంగా ఉంటుంది — ఒక రైతు లేదా న్యాయనిర్ణేత సూచన ఎందుకు ఇవ్వబడిందో ఖచ్చితంగా చూడగలరు, బ్లాక్-బాక్స్ మోడల్ ప్రవేశపెట్టే ముందు నమ్మకానికి ఇది ముఖ్యం.",
+  soil:{Black:"నల్ల నేల (రేగడి)", Red:"ఎర్ర నేల (లేటరైట్)", Alluvial:"ఒండ్రు నేల", "Sandy Loam":"ఇసుక లోమ్", Clay:"బంక మట్టి"},
+  season:{Kharif:"ఖరీఫ్ (వర్షాకాలం)", Rabi:"రబీ (శీతాకాలం)", Zaid:"జాయిద్ (వేసవి)"},
+  level:{Low:"తక్కువ", Medium:"మధ్యస్థ", High:"ఎక్కువ"},
+  growth:{"Sowing/Establishment":"విత్తనం / స్థాపన", Vegetative:"శాఖీయ పెరుగుదల", Flowering:"పుష్పించడం", Maturity:"పరిపక్వత"},
+  weatherAlert:{None:"ఏమీ లేదు", "Heavy rain":"భారీ వర్షం / తుఫాను అవకాశం", Heatwave:"వడగాడ్పు అవకాశం"},
+  cropNames:{Cotton:"పత్తి", "Paddy (Rice)":"వరి (బియ్యం)", Groundnut:"వేరుశనగ", Maize:"మొక్కజొన్న", Soybean:"సోయాబీన్", Wheat:"గోధుమ", "Chickpea (Bengal Gram)":"శనగలు", Mustard:"ఆవాలు", Watermelon:"పుచ్చకాయ", "Green Gram (Moong)":"పెసలు"},
+  gmNames:{"Sunn Hemp (Crotalaria)":"జనుము", "Dhaincha (Sesbania)":"జీలుగ", Cowpea:"అలసందలు", "Horse Gram":"ఉలవలు", "Cluster Bean (Guar)":"గోరుచిక్కుడు", "Berseem Clover":"బర్సీమ్"},
+  dyn:{
+    satTitle:"ఉపగ్రహ డేటా అందింది",
+    satMeta:(lat,lng,acres)=>`${lat}, ${lng} · ~${acres} ఎకరాలు`,
+    satSoil:"నేల రకం (అంచనా)", satRain30:"గత 30 రోజుల వర్షపాతం", satMoisture:"నేల తేమ", satNdvi:"వృక్షసంపద సూచిక (NDVI)",
+    satNote:'ఈ ప్రోటోటైప్ కోసం మీ కోఆర్డినేట్‌లకు అనుసంధానించిన సీడెడ్ మోడల్ ఉపయోగించి అనుకరించబడింది. ఉత్పత్తిలో ఈ కాల్ నిజమైన జియోస్పేషియల్ API తో భర్తీ చేయబడుతుంది — ఉదా. ISRO Bhuvan, Sentinel Hub, లేదా Soil Health Card లుకప్ — అదే lat/lng తో. ఈ రీడింగులు ఇప్పటికే దిగువ ఫారమ్ ఫీల్డ్‌లలో నింపబడ్డాయి — "📡 ఆటో-ఫిల్" గుర్తు ఉన్న ప్రతి ఫీల్డ్‌ను మీరు కొనసాగించే ముందు చేతితో మార్చుకోవచ్చు.',
+    btnContinueCrop:"పంట ఎంపికకు కొనసాగండి →",
+    cropMeta:(duration,water,soil)=>`${duration} రోజుల చక్రం · ${water} నీరు అవసరం · ${soil} నేలకు సరిపోతుంది`,
+    cropFit:(score)=>`${score}% సరిపోలిక`,
+    irr:{
+      holdTitle:"ఇప్పుడు వేచి ఉండండి", holdMeta:"48 గంటల్లో వర్షం అవకాశం",
+      holdText:(p)=>`తదుపరి 2 రోజుల్లో ${p}% వర్షం అవకాశం ఉంది — ఇప్పుడు నీరు పెడితే నీరు నిలిచిపోయే ప్రమాదం మరియు నీటి వృథా జరుగుతుంది. వర్షం అయిపోయాక మళ్లీ తనిఖీ చేయండి.`,
+      recheck2:"2 రోజుల తర్వాత మళ్లీ తనిఖీ చేయండి", moistureBadge:(m)=>`నేల తేమ ${m}%`,
+      nowTitle:"ఇప్పుడు నీరు పెట్టండి", nowMeta:(mm)=>`~${mm} mm సిఫార్సు`,
+      nowText:(crop,moisture,threshold,stage,days,mm)=>`${crop} కోసం ${stage} దశలో నేల తేమ (${moisture}%) ${threshold}% సౌకర్య స్థాయి కంటే తక్కువగా ఉంది, వర్షం పడి ${days} రోజులైంది. సుమారు ${mm} mm నీరు పెట్టి 3–4 రోజుల్లో తేమను మళ్లీ తనిఖీ చేయండి.`,
+      deficitBadge:(d)=>`లోటు: ${d}%`, stageBadge:(s)=>`దశ: ${s}`,
+      noneTitle:"నీటిపారుదల అవసరం లేదు", noneMeta:"తేమ సరిపోతుంది",
+      noneText:(crop,moisture,threshold)=>`${crop} కోసం ఇప్పుడు నేల తేమ (${moisture}%) ${threshold}% సౌకర్య స్థాయి కంటే ఎక్కువగా ఉంది. నీరు పెట్టకపోవడం వల్ల నీరు ఆదా అవుతుంది మరియు వేర్లపై ఒత్తిడి ఉండదు. 3–4 రోజుల్లో లేదా తదుపరి పొడి వాతావరణం తర్వాత మళ్లీ తనిఖీ చేయండి.`,
+      bufferBadge:(b)=>`అదనం: +${b}%`
+    },
+    harv:{
+      metaLabel:"సిఫార్సు చేయబడిన కోత విండో",
+      notReady:(m,d)=>`పరిపక్వత ${m}% మాత్రమే — వాతావరణం ఎలా ఉన్నా పంట సిద్ధంగా లేదు. ఆగి పరిశీలించండి. అంచనా వేసిన సహజ కోత విండో దాదాపు <b>${d}</b> గానే ఉంటుంది.`,
+      rainEarly:(m)=>`పరిపక్వత ${m}%కి చేరింది మరియు సహజ కోత తేదీ దగ్గర భారీ వర్షం అవకాశం ఉంది — <b>సుమారు 6 రోజుల ముందు</b> కోయడం వల్ల పంట పడిపోవడం మరియు ధాన్యం/పండ్ల నష్టం నివారించవచ్చు.`,
+      heatEarly:(m)=>`వడగాడ్పు సాధారణం కంటే వేగంగా పరిపక్వతను తీసుకురావచ్చు. ఇప్పటికే ${m}% పరిపక్వత చేరినందున, క్యాలెండర్ అంచనా కంటే <b>సుమారు 3 రోజుల ముందు</b> కోతకు ప్రణాళిక వేసి ప్రతిరోజూ తనిఖీ చేయండి.`,
+      normal:(m)=>`పరిస్థితులు సాధారణంగా ఉన్నాయి. ${m}% పరిపక్వతతో, కోత విండో దిగువ క్యాలెండర్ అంచనా చుట్టూ కేంద్రీకృతమై ఉంటుంది.`,
+      sownBadge:(d)=>`విత్తినది ${d}`, cycleBadge:(d)=>`${d}-రోజుల చక్రం`
+    },
+    gm:{
+      metaLabel:(gap)=>`${gap}-రోజుల అంతరానికి ఉత్తమమైనది`,
+      text:(crop,nLevel,best,gap,soil)=>`${crop} నేలలో నత్రజనిని <b>${nLevel}</b> స్థాయిలో వదిలింది. ${best.name} మీ ${gap}-రోజుల అంతర విండోకు సరిపోతుంది (${best.minDays}–${best.maxDays} రోజులు అవసరం), ${soil} నేలకు సరిపోతుంది, మరియు ${best.nFix} నత్రజని-స్థిరీకరణ సామర్థ్యం కలిగి ఉంది — ఇప్పుడే విత్తి, తదుపరి పంటకు ముందు దాదాపు 2 వారాల ముందు దానిని నేలలో కలియదున్నండి.`,
+      nfixBadge:(f)=>`N-స్థిరీకరణ: ${f}`, windowBadge:(a,b)=>`విండో: ${a}-${b} రోజులు`
+    },
+    impact:{
+      title:"సీజన్ ప్రభావం (ఉదాహరణ)",
+      text:"పప్పుధాన్యాల పచ్చిరొట్ట ఎరువుల కోసం ప్రచురించబడిన వ్యవసాయ శ్రేణుల ఆధారంగా — వాస్తవ గణాంకాలు జాతి, బయోమాస్ మరియు స్థానిక పరిస్థితులపై ఆధారపడి ఉంటాయి.",
+      b1:"~40–80 kg N/హెక్టారు జోడించబడింది", b2:"తదుపరి సీజన్‌లో 30–50% వరకు తక్కువ సింథటిక్ నత్రజని అవసరం", b3:"వరుస సీజన్లలో నేల సేంద్రీయ కార్బన్ పెరుగుతోంది"
+    },
+    summary:{
+      title:"సీజన్ సారాంశం",
+      subtitle:"ఒక లూప్, పూర్తి",
+      cropK:"పండించిన పంట",
+      irrK:"నీటిపారుదల నిర్ణయం",
+      harvK:"కోత తేదీ",
+      gmK:"నేలకు అందుతున్న పోషణ",
+      irrUnknownShort:"తనిఖీ చేయలేదు",
+      irrUnknownDetail:"ఈ సీజన్‌లో నీటిపారుదల సమయం తనిఖీ చేయలేదు.",
+      loopClosed:"మీరు నేల మరియు వాతావరణం ఆధారంగా పంటను ఎంచుకున్నారు, అలవాటుతో కాకుండా అవసరాన్ని బట్టి నీరు పెట్టారు, సరైన సమయంలో కోతకోశారు, మరియు తదుపరి పంట ముందు నేలకు పోషకాలు తిరిగి అందించారు — ఇదే పూర్తి లూప్.",
+      ringDoneLabel:"✓ సీజన్ పూర్తి",
+      ringDoneName:"లూప్ పూర్తి"
+    },
+    fit:{
+      title:"ఇది ఎందుకు సరిపోతుంది",
+      soilLabel:"నేల సరిపోలిక",
+      rainLabel:"వర్షపాత సరిపోలిక",
+      waterLabel:"నీటి సరిపోలిక"
+    }
+  }
+}
+};
+
+/* ---------------- DATA ---------------- */
+const CROPS = [
+  {name:"Cotton", season:"Kharif", soil:["Black"], rainMin:600, rainMax:1100, water:"Medium", duration:180, nDepletion:"High"},
+  {name:"Paddy (Rice)", season:"Kharif", soil:["Alluvial","Clay"], rainMin:1000, rainMax:2000, water:"High", duration:130, nDepletion:"High"},
+  {name:"Groundnut", season:"Kharif", soil:["Red","Sandy Loam"], rainMin:500, rainMax:800, water:"Medium", duration:110, nDepletion:"Medium"},
+  {name:"Maize", season:"Kharif", soil:["Red","Alluvial","Black"], rainMin:500, rainMax:850, water:"Medium", duration:100, nDepletion:"High"},
+  {name:"Soybean", season:"Kharif", soil:["Black","Alluvial"], rainMin:600, rainMax:1000, water:"Medium", duration:100, nDepletion:"Medium"},
+  {name:"Wheat", season:"Rabi", soil:["Alluvial","Black"], rainMin:300, rainMax:650, water:"Medium", duration:120, nDepletion:"High"},
+  {name:"Chickpea (Bengal Gram)", season:"Rabi", soil:["Black","Alluvial"], rainMin:250, rainMax:450, water:"Low", duration:100, nDepletion:"Low"},
+  {name:"Mustard", season:"Rabi", soil:["Alluvial","Sandy Loam"], rainMin:250, rainMax:450, water:"Low", duration:110, nDepletion:"Medium"},
+  {name:"Watermelon", season:"Zaid", soil:["Sandy Loam","Alluvial"], rainMin:150, rainMax:400, water:"High", duration:90, nDepletion:"Medium"},
+  {name:"Green Gram (Moong)", season:"Zaid", soil:["Red","Black","Alluvial"], rainMin:200, rainMax:450, water:"Low", duration:65, nDepletion:"Low"},
+];
+
+const GREEN_MANURES = [
+  {name:"Sunn Hemp (Crotalaria)", minDays:45, maxDays:75, nFix:"High", soil:["Black","Red","Sandy Loam"]},
+  {name:"Dhaincha (Sesbania)", minDays:45, maxDays:65, nFix:"High", soil:["Alluvial","Clay","Black"]},
+  {name:"Cowpea", minDays:50, maxDays:80, nFix:"Medium", soil:["Red","Sandy Loam","Black"]},
+  {name:"Horse Gram", minDays:60, maxDays:95, nFix:"Medium", soil:["Red","Sandy Loam"]},
+  {name:"Cluster Bean (Guar)", minDays:60, maxDays:85, nFix:"Medium", soil:["Sandy Loam","Black"]},
+  {name:"Berseem Clover", minDays:70, maxDays:110, nFix:"High", soil:["Alluvial","Clay"]},
+];
+
+const STAGE_COLORS = {done:"#6B9B4F", active:"#E0A83E", upcoming:"#43392C"};
+
+let state = { stage:1, completed:[], selectedCrop:null, harvestDate:null, sowDate:null, irrigation:null, bestGM:null, seasonComplete:false };
+let fieldPoints = []; // {lat, lng}
+
+/* ---------------- LANGUAGE ---------------- */
+function t(){ return I18N[LANG]; }
+
+function setLanguage(lang){
+  LANG = lang;
+  document.getElementById('langCard').style.display = 'none';
+  document.getElementById('appBody').style.display = 'block';
+  applyI18n();
+}
+
+function showLangCard(){
+  document.getElementById('langCard').style.display = 'block';
+  document.getElementById('appBody').style.display = 'none';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function applyI18n(){
+  const d = t();
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key = el.getAttribute('data-i18n');
+    if(d[key] !== undefined) el.textContent = d[key];
+  });
+  populateOptions();
+  renderRing();
+  if(state.selectedCrop){ updateCropLabels(); renderFitBreakdown(state.selectedCrop); }
+}
+
+function populateOptions(){
+  const d = t();
+  const setOpts = (selectId, map)=>{
+    const sel = document.getElementById(selectId);
+    if(!sel) return;
+    Array.from(sel.options).forEach(opt=>{
+      if(map[opt.value] !== undefined) opt.textContent = map[opt.value];
+    });
+  };
+  setOpts('soilType', d.soil);
+  setOpts('season', d.season);
+  setOpts('waterAvail', d.level);
+  setOpts('growthStage', d.growth);
+  setOpts('weatherAlert', d.weatherAlert);
+  setOpts('nLevel', d.level);
+}
+
+/* ---------------- FIELD BOUNDARY MAPPING ---------------- */
+function setGpsStatus(msg, cls){
+  const el = document.getElementById('gpsStatus');
+  el.textContent = msg;
+  el.className = 'gps-status' + (cls ? ' '+cls : '');
+}
+
+function addPointGPS(){
+  if(!('geolocation' in navigator)){
+    setGpsStatus('GPS not available on this device/browser — try "Simulate a walk" instead.', 'err');
+    return;
+  }
+  setGpsStatus('Getting your position…');
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      const p = {lat:pos.coords.latitude, lng:pos.coords.longitude};
+      fieldPoints.push(p);
+      setGpsStatus(`Point ${fieldPoints.length} logged: ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`, 'live');
+      renderFieldPreview();
+    },
+    err=>{
+      setGpsStatus('Location permission denied or unavailable — try "Simulate a walk" instead.', 'err');
+    },
+    {enableHighAccuracy:true, timeout:8000}
+  );
+}
+
+function simulateWalk(){
+  const base = fieldPoints[0] || {lat: 17.3850 + (Math.random()-0.5)*0.05, lng: 78.4867 + (Math.random()-0.5)*0.05};
+  const steps = 6;
+  const newPts = [];
+  for(let i=0;i<steps;i++){
+    const angle = (i/steps) * Math.PI * 2;
+    const r = 0.0009 + Math.random()*0.0004;
+    newPts.push({
+      lat: base.lat + Math.sin(angle)*r,
+      lng: base.lng + Math.cos(angle)*r
+    });
+  }
+  fieldPoints = newPts;
+  setGpsStatus(`Simulated walk complete — ${fieldPoints.length} boundary points logged.`, 'live');
+  renderFieldPreview();
+}
+
+function resetField(){
+  fieldPoints = [];
+  setGpsStatus(t().gpsWaiting);
+  renderFieldPreview();
+  document.getElementById('satResult').classList.remove('show');
+  document.getElementById('satResult').innerHTML = '';
+}
+
+function projectPoints(points){
+  if(points.length===0) return [];
+  const lat0 = points[0].lat, lng0 = points[0].lng;
+  return points.map(p=>{
+    const dx = (p.lng-lng0) * 111320 * Math.cos(lat0*Math.PI/180);
+    const dy = (p.lat-lat0) * 110540;
+    return {x:dx, y:-dy};
+  });
+}
+
+function polygonArea(meterPts){
+  if(meterPts.length<3) return 0;
+  let sum=0;
+  for(let i=0;i<meterPts.length;i++){
+    const a = meterPts[i], b = meterPts[(i+1)%meterPts.length];
+    sum += (a.x*b.y - b.x*a.y);
+  }
+  return Math.abs(sum/2);
+}
+
+function renderFieldPreview(){
+  const list = document.getElementById('pointList');
+  list.innerHTML = fieldPoints.map((p,i)=>`<span class="point-chip">#${i+1} ${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}</span>`).join('');
+
+  const svg = document.getElementById('fieldSvg');
+  const meterPts = projectPoints(fieldPoints);
+  if(meterPts.length===0){
+    svg.innerHTML = `<text x="110" y="114" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#5a4f3f">no points yet</text>`;
+    document.getElementById('boundaryActions').style.display='none';
+    return;
+  }
+  const xs = meterPts.map(p=>p.x), ys = meterPts.map(p=>p.y);
+  const minX=Math.min(...xs), maxX=Math.max(...xs), minY=Math.min(...ys), maxY=Math.max(...ys);
+  const spanX = Math.max(maxX-minX, 10), spanY = Math.max(maxY-minY, 10);
+  const scale = 170 / Math.max(spanX, spanY);
+  const offX = 25 + (170-spanX*scale)/2, offY = 25 + (170-spanY*scale)/2;
+  const scaled = meterPts.map(p=>({x:(p.x-minX)*scale+offX, y:(p.y-minY)*scale+offY}));
+
+  const pathStr = scaled.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const dots = scaled.map(p=>`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4" fill="var(--gold)" />`).join('');
+  const poly = scaled.length>=3 ? `<polygon points="${pathStr}" fill="rgba(107,155,79,.18)" stroke="var(--leaf)" stroke-width="2" />` : `<polyline points="${pathStr}" fill="none" stroke="var(--gold)" stroke-width="2" stroke-dasharray="4 3" />`;
+  svg.innerHTML = poly + dots;
+
+  if(fieldPoints.length>=3){
+    document.getElementById('boundaryActions').style.display='flex';
+    const areaM2 = polygonArea(meterPts);
+    const acres = (areaM2/4046.86).toFixed(2);
+    svg.innerHTML += `<text x="110" y="208" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="#B8A88F">~${acres} acres</text>`;
+  } else {
+    document.getElementById('boundaryActions').style.display='none';
+  }
+}
+
+function seededRandom(seed){
+  let t = seed += 0x6D2B79F5;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+
+function closeBoundary(){
+  const lat0 = fieldPoints.reduce((s,p)=>s+p.lat,0)/fieldPoints.length;
+  const lng0 = fieldPoints.reduce((s,p)=>s+p.lng,0)/fieldPoints.length;
+  const seed = Math.floor(Math.abs(lat0*10000 + lng0*10000));
+
+  const soilOptions = ["Black","Red","Alluvial","Sandy Loam","Clay"];
+  const r1 = seededRandom(seed), r2 = seededRandom(seed+1), r3 = seededRandom(seed+2), r4 = seededRandom(seed+3), r5 = seededRandom(seed+4), r6 = seededRandom(seed+5);
+
+  const soilGuess = soilOptions[Math.floor(r1*soilOptions.length)];
+  const rainfall30 = Math.round(300 + r2*900);
+  const soilMoisture = Math.round(15 + r3*40);
+  const ndvi = (0.25 + r4*0.55).toFixed(2);
+  const waterAvailGuess = r5 < 0.33 ? "Low" : (r5 < 0.7 ? "Medium" : "High");
+  const rainProb48 = Math.round(r6*100);
+
+  const meterPts = projectPoints(fieldPoints);
+  const areaAcres = (polygonArea(meterPts)/4046.86).toFixed(2);
+
+  state.satData = {lat0, lng0, soilGuess, rainfall30, soilMoisture, ndvi, waterAvailGuess, areaAcres, rainProb48};
+  applySatelliteData(state.satData);
+
+  const d = t().dyn;
+  const dd = t();
+  const box = document.getElementById('satResult');
+  box.innerHTML = `<div class="headline"><span class="name">${d.satTitle}</span><span class="meta">${d.satMeta(lat0.toFixed(5), lng0.toFixed(5), areaAcres)}</span></div>
+    <div class="sat-grid">
+      <div class="sat-item"><div class="k">${d.satSoil}</div><div class="v">${dd.soil[soilGuess]}</div></div>
+      <div class="sat-item"><div class="k">${d.satRain30}</div><div class="v">${rainfall30} mm</div></div>
+      <div class="sat-item"><div class="k">${d.satMoisture}</div><div class="v">${soilMoisture}%</div></div>
+      <div class="sat-item"><div class="k">${d.satNdvi}</div><div class="v">${ndvi}</div></div>
+    </div>
+    <div class="sim-note">${d.satNote}</div>
+    <div class="actions" style="margin-top:14px;">
+      <button class="primary" onclick="useSatelliteData()">${d.btnContinueCrop}</button>
+    </div>`;
+  box.classList.add('show');
+}
+
+function markAutofilled(fieldId, inputId){
+  const wrap = document.getElementById(fieldId);
+  const input = document.getElementById(inputId);
+  if(!wrap || !input) return;
+  wrap.classList.add('autofilled');
+  const tag = wrap.querySelector('.autofill-tag');
+  if(tag) tag.style.display = 'inline-flex';
+  const clear = ()=>{
+    wrap.classList.remove('autofilled');
+    if(tag) tag.style.display = 'none';
+    input.removeEventListener('input', clear);
+    input.removeEventListener('change', clear);
+  };
+  input.addEventListener('input', clear);
+  input.addEventListener('change', clear);
+}
+
+function applySatelliteData(d){
+  if(!d) return;
+
+  document.getElementById('soilType').value = d.soilGuess;
+  markAutofilled('f-soilType','soilType');
+
+  const seasonalRain = Math.min(1900, d.rainfall30 * 2);
+  document.getElementById('rainfall').value = seasonalRain;
+  document.getElementById('rainOut').textContent = seasonalRain;
+  markAutofilled('f-rainfall','rainfall');
+
+  document.getElementById('waterAvail').value = d.waterAvailGuess;
+  markAutofilled('f-waterAvail','waterAvail');
+
+  document.getElementById('moisture').value = d.soilMoisture;
+  document.getElementById('moistOut').textContent = d.soilMoisture;
+  markAutofilled('f-moisture','moisture');
+
+  document.getElementById('rainProb').value = d.rainProb48;
+  document.getElementById('rainProbOut').textContent = d.rainProb48;
+  markAutofilled('f-rainProb','rainProb');
+}
+
+function useSatelliteData(){
+  document.getElementById('fieldCard').style.display = 'none';
+  document.getElementById('mainFlow').style.display = 'block';
+  goTo(1);
+}
+
+function skipMapping(){
+  document.getElementById('fieldCard').style.display = 'none';
+  document.getElementById('mainFlow').style.display = 'block';
+  goTo(1);
+}
+
+/* ---------------- RING ---------------- */
+function renderRing(){
+  const d = t();
+  const segCol = [1,2,3,4].map(n=>{
+    if(state.completed.includes(n)) return STAGE_COLORS.done;
+    if(n===state.stage) return STAGE_COLORS.active;
+    return STAGE_COLORS.upcoming;
+  });
+  document.getElementById('ring').style.background =
+    `conic-gradient(${segCol[0]} 0deg 88deg, var(--soil-dark) 88deg 92deg, ${segCol[1]} 92deg 178deg, var(--soil-dark) 178deg 182deg, ${segCol[2]} 182deg 268deg, var(--soil-dark) 268deg 272deg, ${segCol[3]} 272deg 358deg, var(--soil-dark) 358deg 360deg)`;
+  const labelWrap = document.getElementById('stageNum').parentElement;
+  const ringOuter = document.querySelector('.ring-outer');
+  if(state.seasonComplete){
+    labelWrap.textContent = d.dyn.summary.ringDoneLabel;
+    document.getElementById('stageName').textContent = d.dyn.summary.ringDoneName;
+    ringOuter.classList.add('complete');
+  } else {
+    labelWrap.innerHTML = `<span data-i18n="stageLabel">${d.stageLabel}</span> <span id="stageNum">${state.stage}</span> <span data-i18n="ofLabel">${d.ofLabel}</span>`;
+    document.getElementById('stageName').textContent = d.stageNames[state.stage-1];
+    ringOuter.classList.remove('complete');
+  }
+  for(let i=1;i<=4;i++){
+    const pill = document.getElementById('pill'+i);
+    pill.textContent = d.pillLabels[i-1];
+    pill.classList.remove('active','done');
+    if(state.completed.includes(i)) pill.classList.add('done');
+    else if(i===state.stage) pill.classList.add('active');
+  }
+}
+
+function goTo(n){
+  state.stage = n;
+  state.seasonComplete = false;
+  for(let i=1;i<=4;i++) document.getElementById('stage'+i).style.display = (i===n)?'block':'none';
+  renderRing();
+  document.getElementById('stage'+n).scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+/* ---------------- helpers ---------------- */
+function overlap(aMin,aMax,bMin,bMax){ return Math.max(0, Math.min(aMax,bMax) - Math.max(aMin,bMin)); }
+function waterScore(need, avail){
+  const order = {Low:0, Medium:1, High:2};
+  return 1 - Math.abs(order[need]-order[avail])/2;
+}
+
+/* ---------------- STAGE 1 ---------------- */
+document.getElementById('rainfall').addEventListener('input', e=> document.getElementById('rainOut').textContent = e.target.value);
+
+function suggestCrops(){
+  const soil = document.getElementById('soilType').value;
+  const season = document.getElementById('season').value;
+  const rainfall = parseInt(document.getElementById('rainfall').value);
+  const water = document.getElementById('waterAvail').value;
+  const d = t();
+
+  let scored = CROPS.filter(c=>c.season===season).map(c=>{
+    const soilPts = c.soil.includes(soil) ? 40 : 0;
+    const rainPts = (rainfall>=c.rainMin && rainfall<=c.rainMax) ? 35 : Math.max(0, 20 - Math.min(20, Math.abs(rainfall - (rainfall<c.rainMin?c.rainMin:c.rainMax))/20));
+    const waterPts = waterScore(c.water, water)*25;
+    const score = Math.round(soilPts + rainPts + waterPts);
+    return {...c, score, fit:{soil:Math.round(soilPts), rain:Math.round(rainPts), water:Math.round(waterPts)}};
+  }).sort((a,b)=>b.score-a.score).slice(0,3);
+
+  const box = document.getElementById('cropOptions');
+  box.innerHTML = '';
+  scored.forEach((c,idx)=>{
+    const div = document.createElement('div');
+    div.className = 'crop-option' + (idx===0?' selected':'');
+    const localizedSoil = c.soil.map(s=>d.soil[s]).join(', ');
+    div.innerHTML = `<div>
+        <div class="cname">${d.cropNames[c.name] || c.name}</div>
+        <div class="cmeta">${d.dyn.cropMeta(c.duration, d.level[c.water], localizedSoil)}</div>
+      </div>
+      <div class="score">${d.dyn.cropFit(c.score)}</div>`;
+    div.onclick = ()=>{
+      document.querySelectorAll('.crop-option').forEach(el=>el.classList.remove('selected'));
+      div.classList.add('selected');
+      state.selectedCrop = c;
+      updateCropLabels();
+      renderFitBreakdown(c);
+    };
+    box.appendChild(div);
+  });
+  state.selectedCrop = scored[0];
+  updateCropLabels();
+  renderFitBreakdown(scored[0]);
+  document.getElementById('cropResult').classList.add('show');
+  document.getElementById('cropContinueRow').style.display='flex';
+  if(!state.completed.includes(1)) state.completed.push(1);
+  renderRing();
+}
+
+function renderFitBreakdown(crop){
+  if(!crop || !crop.fit) return;
+  const d = t();
+  const fit = d.dyn.fit;
+  const rows = [
+    {label:fit.soilLabel, val:crop.fit.soil, max:40},
+    {label:fit.rainLabel, val:crop.fit.rain, max:35},
+    {label:fit.waterLabel, val:crop.fit.water, max:25}
+  ];
+  const box = document.getElementById('fitBreakdown');
+  box.innerHTML = `<div class="fit-title">${fit.title}</div>` + rows.map((r,i)=>`
+    <div class="fit-row">
+      <div class="fit-label">${r.label}</div>
+      <div class="fit-track"><div class="fit-fill" id="fitFill${i}" style="width:0%;"></div></div>
+      <div class="fit-num">${r.val}/${r.max}</div>
+    </div>`).join('');
+  box.style.display = 'block';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    rows.forEach((r,i)=>{
+      const pct = Math.max(0, Math.min(100, (r.val/r.max)*100));
+      const el = document.getElementById('fitFill'+i);
+      if(el) el.style.width = pct+'%';
+    });
+  }));
+}
+
+function updateCropLabels(){
+  if(!state.selectedCrop) return;
+  const d = t();
+  const name = d.cropNames[state.selectedCrop.name] || state.selectedCrop.name;
+  document.getElementById('irrCropLabel').textContent = name;
+  document.getElementById('harvCropLabel').textContent = name;
+  document.getElementById('harvDurationLabel').textContent = state.selectedCrop.duration;
+  document.getElementById('gmCropLabel').textContent = name;
+}
+
+/* ---------------- STAGE 2 ---------------- */
+document.getElementById('moisture').addEventListener('input', e=> document.getElementById('moistOut').textContent = e.target.value);
+document.getElementById('daysSince').addEventListener('input', e=> document.getElementById('daysOut').textContent = e.target.value);
+document.getElementById('rainProb').addEventListener('input', e=> document.getElementById('rainProbOut').textContent = e.target.value);
+
+function checkIrrigation(){
+  const moisture = parseInt(document.getElementById('moisture').value);
+  const daysSince = parseInt(document.getElementById('daysSince').value);
+  const rainProb = parseInt(document.getElementById('rainProb').value);
+  const stageVal = document.getElementById('growthStage').value;
+  const d = t();
+  const crop = state.selectedCrop || {water:"Medium", name:"crop"};
+  const cropName = d.cropNames[crop.name] || crop.name;
+  const stageLabel = d.growth[stageVal];
+
+  const thresholds = {Low:22, Medium:32, High:42};
+  const stageBoost = {Flowering:6, Maturity:-8, "Sowing/Establishment":4, "Vegetative":0};
+  const threshold = thresholds[crop.water] + (stageBoost[stageVal]||0);
+
+  const box = document.getElementById('irrResult');
+  const irr = d.dyn.irr;
+  let html = '';
+  let decision, mm = null;
+  if(rainProb >= 60){
+    decision = 'hold';
+    html = `<div class="headline"><span class="name">${irr.holdTitle}</span><span class="meta">${irr.holdMeta}</span></div>
+    <p>${irr.holdText(rainProb)}</p>
+    <div class="badge-row"><span class="badge gold">${irr.recheck2}</span><span class="badge">${irr.moistureBadge(moisture)}</span></div>`;
+  } else if(moisture < threshold){
+    decision = 'now';
+    const deficit = threshold - moisture;
+    mm = Math.round(8 + deficit*0.9);
+    html = `<div class="headline"><span class="name">${irr.nowTitle}</span><span class="meta">${irr.nowMeta(mm)}</span></div>
+    <p>${irr.nowText(cropName, moisture, threshold, stageLabel, daysSince, mm)}</p>
+    <div class="badge-row"><span class="badge clay">${irr.deficitBadge(deficit)}</span><span class="badge">${irr.stageBadge(stageLabel)}</span></div>`;
+  } else {
+    decision = 'none';
+    html = `<div class="headline"><span class="name">${irr.noneTitle}</span><span class="meta">${irr.noneMeta}</span></div>
+    <p>${irr.noneText(cropName, moisture, threshold)}</p>
+    <div class="badge-row"><span class="badge">${irr.bufferBadge(moisture-threshold)}</span></div>`;
+  }
+  box.innerHTML = html;
+  box.classList.add('show');
+  document.getElementById('irrContinueRow').style.display='flex';
+  if(!state.completed.includes(2)) state.completed.push(2);
+  state.irrigation = {decision, moisture, daysSince, rainProb, stageVal, threshold, mm};
+  renderRing();
+}
+
+/* ---------------- STAGE 3 ---------------- */
+document.getElementById('maturity').addEventListener('input', e=> document.getElementById('matOut').textContent = e.target.value);
+(function setDefaultDate(){
+  const d = new Date(); d.setDate(d.getDate()-60);
+  document.getElementById('sowDate').value = d.toISOString().split('T')[0];
+})();
+
+function checkHarvest(){
+  const d = t();
+  const crop = state.selectedCrop || {duration:110, name:"crop"};
+  const cropName = d.cropNames[crop.name] || crop.name;
+  const sowStr = document.getElementById('sowDate').value;
+  const maturity = parseInt(document.getElementById('maturity').value);
+  const alertVal = document.getElementById('weatherAlert').value;
+
+  const sow = sowStr ? new Date(sowStr) : new Date();
+  let baseline = new Date(sow); baseline.setDate(baseline.getDate()+crop.duration);
+  let adjusted = new Date(baseline);
+  let note = "";
+  const harv = d.dyn.harv;
+
+  if(maturity < 80){
+    note = harv.notReady(maturity, baseline.toDateString());
+  } else if(alertVal === "Heavy rain" && maturity >= 80){
+    adjusted.setDate(adjusted.getDate() - 6);
+    note = harv.rainEarly(maturity);
+  } else if(alertVal === "Heatwave" && maturity >= 80){
+    adjusted.setDate(adjusted.getDate() - 3);
+    note = harv.heatEarly(maturity);
+  } else {
+    note = harv.normal(maturity);
+  }
+
+  const box = document.getElementById('harvResult');
+  box.innerHTML = `<div class="headline"><span class="name">${adjusted.toDateString()}</span><span class="meta">${harv.metaLabel}</span></div>
+    <p>${note}</p>
+    <div class="badge-row"><span class="badge">${harv.sownBadge(sow.toDateString())}</span><span class="badge">${harv.cycleBadge(crop.duration)}</span>${alertVal!=="None"?`<span class="badge clay">${d.weatherAlert[alertVal]}</span>`:''}</div>`;
+  box.classList.add('show');
+  document.getElementById('harvContinueRow').style.display='flex';
+  state.harvestDate = adjusted;
+  state.sowDate = sow;
+  if(!state.completed.includes(3)) state.completed.push(3);
+  renderRing();
+}
+
+/* ---------------- STAGE 4 ---------------- */
+document.getElementById('gapDays').addEventListener('input', e=> document.getElementById('gapOut').textContent = e.target.value);
+
+function suggestGreenManure(){
+  const d = t();
+  const crop = state.selectedCrop || {nDepletion:"Medium", name:"crop"};
+  const cropName = d.cropNames[crop.name] || crop.name;
+  const gap = parseInt(document.getElementById('gapDays').value);
+  const nLevel = document.getElementById('nLevel').value;
+  const soil = document.getElementById('soilType').value;
+
+  let scored = GREEN_MANURES.map(g=>{
+    let score = 0;
+    if(gap >= g.minDays && gap <= g.maxDays) score += 45;
+    else score += Math.max(0, 25 - Math.abs(gap - ((g.minDays+g.maxDays)/2))/2);
+    if(g.soil.includes(soil)) score += 25;
+    const fixOrder = {Low:0,Medium:1,High:2};
+    const needBoost = (nLevel==="Low" || crop.nDepletion==="High") ? 1 : 0;
+    score += (fixOrder[g.nFix] + needBoost*1) * 10;
+    return {...g, score: Math.round(score), localName: d.gmNames[g.name] || g.name};
+  }).sort((a,b)=>b.score-a.score);
+
+  const best = scored[0];
+  const gm = d.dyn.gm;
+  const bestForText = {...best, name: best.localName};
+  const box = document.getElementById('gmResult');
+  box.innerHTML = `<div class="headline"><span class="name">${best.localName}</span><span class="meta">${gm.metaLabel(gap)}</span></div>
+    <p>${gm.text(cropName, d.level[nLevel], bestForText, gap, d.soil[soil])}</p>
+    <div class="badge-row"><span class="badge">${gm.nfixBadge(d.level[best.nFix])}</span><span class="badge gold">${d.dyn.cropFit(best.score)}</span><span class="badge">${gm.windowBadge(best.minDays, best.maxDays)}</span></div>`;
+  box.classList.add('show');
+  document.getElementById('gmContinueRow').style.display='flex';
+  if(!state.completed.includes(4)) state.completed.push(4);
+  state.bestGM = best;
+  renderRing();
+}
+
+function showImpact(){
+  const d = t();
+  const dyn = d.dyn;
+  const sum = dyn.summary;
+  const crop = state.selectedCrop || {};
+  const cropName = d.cropNames[crop.name] || crop.name || '';
+  const localizedSoil = (crop.soil||[]).map(s=>d.soil[s]).join(', ');
+  const cropDetail = crop.duration ? dyn.cropMeta(crop.duration, d.level[crop.water]||'', localizedSoil) : '';
+
+  const irr = state.irrigation;
+  let irrShort, irrDetail;
+  if(irr){
+    const stageLabel = d.growth[irr.stageVal] || irr.stageVal;
+    if(irr.decision === 'hold'){ irrShort = dyn.irr.holdTitle; irrDetail = dyn.irr.holdText(irr.rainProb); }
+    else if(irr.decision === 'now'){ irrShort = dyn.irr.nowTitle; irrDetail = dyn.irr.nowText(cropName, irr.moisture, irr.threshold, stageLabel, irr.daysSince, irr.mm); }
+    else { irrShort = dyn.irr.noneTitle; irrDetail = dyn.irr.noneText(cropName, irr.moisture, irr.threshold); }
+  } else {
+    irrShort = sum.irrUnknownShort;
+    irrDetail = sum.irrUnknownDetail;
+  }
+
+  const harvestStr = state.harvestDate ? state.harvestDate.toDateString() : '—';
+  const harvParts = [];
+  if(state.sowDate) harvParts.push(dyn.harv.sownBadge(state.sowDate.toDateString()));
+  if(crop.duration) harvParts.push(dyn.harv.cycleBadge(crop.duration));
+
+  const gm = state.bestGM;
+  const gmParts = [];
+  if(gm){
+    gmParts.push(dyn.gm.nfixBadge(d.level[gm.nFix]));
+    gmParts.push(dyn.gm.windowBadge(gm.minDays, gm.maxDays));
+  }
+
+  const box = document.getElementById('impactResult');
+  box.innerHTML = `
+    <div class="headline"><span class="name">${sum.title}</span><span class="meta">${sum.subtitle}</span></div>
+    <div class="recap-list">
+      <div class="recap-item"><div class="k">${sum.cropK}</div><div class="v">${cropName}</div><div class="d">${cropDetail}</div></div>
+      <div class="recap-item"><div class="k">${sum.irrK}</div><div class="v">${irrShort}</div><div class="d">${irrDetail}</div></div>
+      <div class="recap-item"><div class="k">${sum.harvK}</div><div class="v">${harvestStr}</div><div class="d">${harvParts.join(' · ')}</div></div>
+      <div class="recap-item"><div class="k">${sum.gmK}</div><div class="v">${gm?gm.localName:''}</div><div class="d">${gmParts.join(' · ')}</div></div>
+    </div>
+    <p>${dyn.impact.text}</p>
+    <div class="badge-row">
+      <span class="badge">${dyn.impact.b1}</span>
+      <span class="badge gold">${dyn.impact.b2}</span>
+      <span class="badge">${dyn.impact.b3}</span>
+    </div>
+    <div class="sim-note leaf">${sum.loopClosed}</div>
+  `;
+  box.classList.add('show');
+  state.seasonComplete = true;
+  renderRing();
+}
+
+/* ---------------- ABOUT ---------------- */
+function toggleAbout(){
+  document.getElementById('aboutBody').classList.toggle('show');
+}
+
+renderFieldPreview();
+</script>
+</body>
+</html>
